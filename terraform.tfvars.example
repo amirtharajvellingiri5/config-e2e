@@ -1,0 +1,9 @@
+# Copy this file to terraform.tfvars and customize
+
+aws_region    = "us-west-2"
+environment   = "dev"
+instance_type = "t2.micro"
+
+# Optional: Uncomment to use custom values
+# cluster_name = "my-kafka-cluster"
+# enable_monitoring = true
