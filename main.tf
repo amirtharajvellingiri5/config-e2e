@@ -139,6 +139,18 @@ module "kafka" {
   ]
 }
 
+module "springboot" {
+  source                = "./modules/springboot"
+  environment           = var.environment
+  instance_type         = var.springboot_instance_type
+  subnet_id             = module.network.public_subnet_id
+  security_group_id     = module.security.springboot_sg_id
+  instance_profile_name = module.security.springboot_instance_profile_name
+  key_name              = var.key_name
+  app_image_uri         = var.app_image_uri
+}
+
+
 # -------------------------
 # Outputs
 # -------------------------
