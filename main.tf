@@ -60,14 +60,16 @@ module "kafka" {
   subnet_id             = module.network.public_subnet_id
   security_group_id     = module.security.kafka_security_group_id
   instance_profile_name = module.security.kafka_instance_profile_name
-  vpc_id                = module.network.vpc_id
   key_name              = var.key_name
+  dockerhub_user        = var.dockerhub_user
+  dockerhub_password    = var.dockerhub_password
 
   depends_on = [
     module.network,
     module.security
   ]
 }
+
 
 # -------------------------
 # Outputs
