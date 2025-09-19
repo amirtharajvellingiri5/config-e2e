@@ -1,10 +1,10 @@
 name: Terraform Deploy Infra
 
 on:
-  workflow_dispatch: # manual trigger
+  workflow_dispatch:
   push:
     branches:
-      - main # run on push to main
+      - main
 
 jobs:
   terraform-deploy:
@@ -29,11 +29,11 @@ jobs:
       - name: Create tfvars file
         run: |
           cat > dev.auto.tfvars <<EOF
-          dockerhub_user     = "${{ secrets.DOCKERHUB_USERNAME }}"
-          dockerhub_password = "${{ secrets.DOCKERHUB_TOKEN }}"
-          key_name           = "${{ secrets.EC2_KEY_NAME }}"
-          environment        = "dev"
-          EOF
+dockerhub_user     = "${{ secrets.DOCKERHUB_USERNAME }}"
+dockerhub_password = "${{ secrets.DOCKERHUB_TOKEN }}"
+key_name           = "${{ secrets.EC2_KEY_NAME }}"
+environment        = "dev"
+EOF
 
       - name: Terraform Init
         run: terraform init
