@@ -63,13 +63,13 @@ module "kafka" {
   key_name              = var.key_name
   dockerhub_user        = var.dockerhub_user
   dockerhub_password    = var.dockerhub_password
+  vpc_id                = module.network.vpc_id
 
   depends_on = [
     module.network,
     module.security
   ]
 }
-
 
 # -------------------------
 # Outputs
