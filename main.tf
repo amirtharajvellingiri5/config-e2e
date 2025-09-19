@@ -150,6 +150,12 @@ module "springboot" {
   app_image_uri         = var.app_image_uri
 }
 
+module "network" {
+  source      = "./modules/network"
+  environment = var.environment
+  # any other inputs your network module requires
+}
+
 
 # -------------------------
 # Outputs
