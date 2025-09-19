@@ -126,7 +126,7 @@ module "kafka" {
   source                = "./modules/kafka"
   environment           = var.environment
   instance_type         = var.instance_type
-  subnet_ids            = aws_subnet.public[*].id
+  subnet_id             = aws_subnet.public[*].id
   security_group_id     = module.security.kafka_security_group_id
   instance_profile_name = module.security.kafka_instance_profile_name
   key_name              = var.key_name
