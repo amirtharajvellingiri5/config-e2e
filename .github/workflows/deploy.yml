@@ -1,0 +1,52 @@
+name: Terraform Deploy Infra
+
+on:
+  workflow_dispatch: # Manual trigger in GitHub
+  push:
+    branches: ['main'] # Optional: auto-deploy on infra repo updates
+
+jobs:
+  terraform-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout infra repo
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Set up Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.0
+
+      # 3️⃣ Configure AWS credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      # 4️⃣ Terraform Init
+      - name: Terraform Init
+        run: terraform init
+
+      # 5️⃣ Terraform Plan
+      - name: Terraform Plan
+        run: terraform plan \
+          -var="dockerhub_user=${{ secrets.DOCKERHUB_USERNAME }}" \
+          -var="dockerhub_password=${{ secrets.DOCKERHUB_TOKEN }}" \
+          -var="key_name=${{ secrets.EC2_KEY_NAME }}" \
+          -var="environment=dev"
+
+      # 6️⃣ Terraform Apply
+      - name: Terraform Apply
+        run: terraform apply -auto-approve \
+          -var="dockerhub_user=${{ secrets.DOCKERHUB_USERNAME }}" \
+          -var="dockerhub_password=${{ secrets.DOCKERHUB_TOKEN }}" \
+          -var="key_name=${{ secrets.EC2_KEY_NAME }}" \
+          -var="environment=dev"
+
+      # 7️⃣ Show Outputs
+      - name: Terraform Outputs
+        run: terraform output
