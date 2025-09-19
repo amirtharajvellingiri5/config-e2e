@@ -32,13 +32,82 @@ variable "instance_type" {
   default     = "t3.small"
 }
 
+variable "key_name" {
+  description = "EC2 Key Pair name"
+  type        = string
+}
+
+variable "dockerhub_user" {
+  description = "DockerHub username"
+  type        = string
+}
+
+variable "dockerhub_password" {
+  description = "DockerHub password or token"
+  type        = string
+}
+
+variable "vpc_cidr" {
+  description = "VPC CIDR block"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "public_subnet_cidrs" {
+  description = "List of public subnet CIDRs"
+  type        = list(string)
+  default     = ["10.0.1.0/24", "10.0.2.0/24"]
+}
 
 # -------------------------
-# Network Module
+# Dynamic VPC and Networking
 # -------------------------
-module "network" {
-  source      = "./modules/network"
-  environment = var.environment
+resource "aws_vpc" "dynamic_vpc" {
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+  tags = {
+    Name = "${var.environment}-vpc"
+  }
+}
+
+data "aws_availability_zones" "available" {}
+
+resource "aws_subnet" "public" {
+  count                   = length(var.public_subnet_cidrs)
+  vpc_id                  = aws_vpc.dynamic_vpc.id
+  cidr_block              = var.public_subnet_cidrs[count.index]
+  map_public_ip_on_launch = true
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  tags = {
+    Name = "${var.environment}-public-${count.index}"
+  }
+}
+
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.dynamic_vpc.id
+  tags = {
+    Name = "${var.environment}-igw"
+  }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.dynamic_vpc.id
+  tags = {
+    Name = "${var.environment}-public-rt"
+  }
+}
+
+resource "aws_route" "default_route" {
+  route_table_id         = aws_route_table.public.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.igw.id
+}
+
+resource "aws_route_table_association" "public_assoc" {
+  count          = length(aws_subnet.public)
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
 }
 
 # -------------------------
@@ -47,7 +116,7 @@ module "network" {
 module "security" {
   source      = "./modules/security"
   environment = var.environment
-  vpc_id      = module.network.vpc_id
+  vpc_id      = aws_vpc.dynamic_vpc.id
 }
 
 # -------------------------
@@ -57,16 +126,15 @@ module "kafka" {
   source                = "./modules/kafka"
   environment           = var.environment
   instance_type         = var.instance_type
-  subnet_id             = module.network.public_subnet_id
+  subnet_ids            = aws_subnet.public[*].id
   security_group_id     = module.security.kafka_security_group_id
   instance_profile_name = module.security.kafka_instance_profile_name
   key_name              = var.key_name
   dockerhub_user        = var.dockerhub_user
   dockerhub_password    = var.dockerhub_password
-  vpc_id                = module.network.vpc_id
+  vpc_id                = aws_vpc.dynamic_vpc.id
 
   depends_on = [
-    module.network,
     module.security
   ]
 }
@@ -74,6 +142,16 @@ module "kafka" {
 # -------------------------
 # Outputs
 # -------------------------
+output "vpc_id" {
+  description = "ID of the dynamically created VPC"
+  value       = aws_vpc.dynamic_vpc.id
+}
+
+output "public_subnet_ids" {
+  description = "IDs of public subnets"
+  value       = aws_subnet.public[*].id
+}
+
 output "kafka_public_ip" {
   description = "Public IP of Kafka server"
   value       = module.kafka.kafka_public_ip

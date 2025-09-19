@@ -9,8 +9,3 @@ output "springboot_url" {
   description = "Spring Boot app URL"
   value       = module.springboot.springboot_url
 }
-
-output "vpc_id" {
-  description = "The ID of the VPC"
-  value       = aws_vpc.main.id
-}
