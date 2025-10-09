@@ -139,11 +139,6 @@ module "kafka" {
   ]
 }
 
-module "springboot_security" {
-  source      = "./modules/springboot_security"
-  environment = var.environment
-  vpc_id      = var.vpc_id
-}
 
 module "springboot" {
   source                = "./modules/springboot"
