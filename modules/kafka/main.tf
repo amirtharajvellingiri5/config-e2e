@@ -13,8 +13,8 @@ variable "instance_type" {
 }
 
 variable "subnet_id" {
-  description = "Subnet ID for EC2 instance"
-  type        = string
+  description = "Subnet IDs for EC2 instance (expects a list; the first item will be used)"
+  type        = list(string)
 }
 
 variable "security_group_id" {
@@ -74,7 +74,7 @@ resource "aws_eip" "kafka_eip" {
 resource "aws_instance" "kafka" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = var.instance_type
-  subnet_id              = var.subnet_id
+  subnet_id              = var.subnet_id[0]
   vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = var.instance_profile_name
   key_name               = var.key_name

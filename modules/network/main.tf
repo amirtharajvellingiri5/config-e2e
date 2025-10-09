@@ -3,7 +3,17 @@ variable "environment" {
   type        = string
 }
 
-# Get default VPC (simplified approach)
+# Get default VPC (robust lookup)
+data "aws_vpcs" "default" {
+  filter {
+    name   = "isDefault"
+    values = ["true"]
+  }
+}
+
+data "aws_vpc" "default" {
+  id = data.aws_vpcs.default.ids[0]
+}
 data "aws_vpc" "default" {
   default = true
 }
