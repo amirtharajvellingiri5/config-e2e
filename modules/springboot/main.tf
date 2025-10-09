@@ -1,3 +1,6 @@
+##########################
+# VARIABLES
+##########################
 variable "environment" {
   description = "Environment name"
   type        = string
@@ -46,6 +49,9 @@ variable "dockerhub_password" {
   sensitive   = true
 }
 
+##########################
+# DATA SOURCES
+##########################
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -56,6 +62,11 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+##########################
+# RESOURCES
+##########################
+
+# Elastic IP for Spring Boot instance
 resource "aws_eip" "springboot_eip" {
   domain = "vpc"
 
@@ -65,13 +76,15 @@ resource "aws_eip" "springboot_eip" {
   }
 }
 
+# EC2 Instance for Spring Boot
 resource "aws_instance" "springboot" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = var.instance_type
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [var.security_group_id]
-  iam_instance_profile   = var.instance_profile_name
-  key_name               = var.key_name
+
+  iam_instance_profile = var.instance_profile_name
+  key_name             = var.key_name
 
   user_data = templatefile("${path.module}/user_data.sh", {
     app_image_uri      = var.app_image_uri
@@ -90,11 +103,15 @@ resource "aws_instance" "springboot" {
   }
 }
 
+# Associate EIP with the instance
 resource "aws_eip_association" "springboot_eip_assoc" {
   instance_id   = aws_instance.springboot.id
   allocation_id = aws_eip.springboot_eip.id
 }
 
+##########################
+# OUTPUTS
+##########################
 output "springboot_public_ip" {
   description = "Public IP of Spring Boot App Server"
   value       = aws_eip.springboot_eip.public_ip

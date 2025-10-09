@@ -1,6 +1,6 @@
-# -------------------------
-# Variables
-# -------------------------
+##########################
+# VARIABLES
+##########################
 variable "environment" {
   description = "Environment name"
   type        = string
@@ -41,11 +41,12 @@ variable "dockerhub_user" {
 variable "dockerhub_password" {
   description = "DockerHub password / token"
   type        = string
+  sensitive   = true
 }
 
-# -------------------------
-# Data Source
-# -------------------------
+##########################
+# DATA SOURCE
+##########################
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -56,9 +57,9 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-# -------------------------
-# Elastic IP
-# -------------------------
+##########################
+# ELASTIC IP
+##########################
 resource "aws_eip" "kafka_eip" {
   domain = "vpc"
 
@@ -68,9 +69,9 @@ resource "aws_eip" "kafka_eip" {
   }
 }
 
-# -------------------------
-# EC2 Instance
-# -------------------------
+##########################
+# EC2 INSTANCE
+##########################
 resource "aws_instance" "kafka" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = var.instance_type
@@ -96,17 +97,17 @@ resource "aws_instance" "kafka" {
   }
 }
 
-# -------------------------
-# EIP Association
-# -------------------------
+##########################
+# EIP ASSOCIATION
+##########################
 resource "aws_eip_association" "kafka_eip_assoc" {
   instance_id   = aws_instance.kafka.id
   allocation_id = aws_eip.kafka_eip.id
 }
 
-# -------------------------
-# Outputs
-# -------------------------
+##########################
+# OUTPUTS
+##########################
 output "kafka_public_ip" {
   description = "Public IP of Kafka Server"
   value       = aws_eip.kafka_eip.public_ip
@@ -123,6 +124,6 @@ output "ssh_command" {
 }
 
 output "instance_id" {
-  description = "EC2 instance id"
+  description = "EC2 instance ID"
   value       = aws_instance.kafka.id
 }
