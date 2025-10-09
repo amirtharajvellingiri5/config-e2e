@@ -1,22 +1,18 @@
-name: Terraform Destroy
+name: Terraform Destroy Infra
 
-# Allow manual trigger and also on push to a branch if needed
 on:
   workflow_dispatch:
   push:
     branches:
-      - main # Optional: run on push to main branch
+      - main
 
 jobs:
   terraform-destroy:
     runs-on: ubuntu-latest
 
-    env:
-      AWS_REGION: us-east-1 # Change to your region
-
     steps:
-      # Step 1: Checkout the repo
-      - name: Checkout Repository
+      # Step 1: Checkout repo
+      - name: Checkout Infra Repo
         uses: actions/checkout@v4
 
       # Step 2: Setup Terraform
@@ -27,18 +23,26 @@ jobs:
 
       # Step 3: Configure AWS Credentials
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-west-2
 
-      # Step 4: Initialize Terraform
+      # Step 4: Create tfvars file
+      - name: Create tfvars file
+        run: |
+          cat > dev.auto.tfvars <<EOF
+          dockerhub_user     = "${{ secrets.DOCKERHUB_USERNAME }}"
+          dockerhub_password = "${{ secrets.DOCKERHUB_TOKEN }}"
+          key_name           = "${{ secrets.EC2_KEY_NAME }}"
+          environment        = "dev"
+          EOF
+
+      # Step 5: Terraform Init
       - name: Terraform Init
-        working-directory: ./infra # Change to your Terraform directory
-        run: terraform init -input=false
+        run: terraform init
 
-      # Step 5: Terraform Destroy
+      # Step 6: Terraform Destroy
       - name: Terraform Destroy
-        working-directory: ./infra # Change to your Terraform directory
-        run: terraform destroy -auto-approve
+        run: terraform destroy -auto-approve -var-file=dev.auto.tfvars
