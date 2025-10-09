@@ -32,12 +32,6 @@ variable "instance_type" {
   default     = "t3.small"
 }
 
-variable "springboot_instance_type" {
-  description = "EC2 instance type for Spring Boot"
-  type        = string
-  default     = "t3.small"
-}
-
 variable "key_name" {
   description = "EC2 Key Pair name"
   type        = string
@@ -50,12 +44,6 @@ variable "dockerhub_user" {
 
 variable "dockerhub_password" {
   description = "DockerHub password or token"
-  type        = string
-  sensitive   = true
-}
-
-variable "app_image_uri" {
-  description = "Spring Boot application Docker image URI"
   type        = string
 }
 
@@ -151,26 +139,27 @@ module "kafka" {
   ]
 }
 
-# -------------------------
-# Spring Boot Module
-# -------------------------
+
 module "springboot" {
   source                = "./modules/springboot"
   environment           = var.environment
   instance_type         = var.springboot_instance_type
-  subnet_id             = aws_subnet.public[0].id # Using first public subnet
+  subnet_id             = module.network.public_subnet_id
   security_group_id     = module.security.springboot_sg_id
   instance_profile_name = module.security.springboot_instance_profile_name
   key_name              = var.key_name
   app_image_uri         = var.app_image_uri
   dockerhub_user        = var.dockerhub_user
-  dockerhub_password    = var.dockerhub_password # ADDED THIS
-
-  depends_on = [
-    module.security,
-    module.kafka
-  ]
+  dockerhub_password    = var.dockerhub_password
 }
+
+
+module "network" {
+  source      = "./modules/network"
+  environment = var.environment
+  # any other inputs your network module requires
+}
+
 
 # -------------------------
 # Outputs
@@ -198,9 +187,4 @@ output "kafka_bootstrap_servers" {
 output "ssh_command" {
   description = "SSH command to connect to Kafka server"
   value       = module.kafka.ssh_command
-}
-
-output "springboot_public_ip" {
-  description = "Public IP of Spring Boot server"
-  value       = module.springboot.springboot_public_ip
 }
