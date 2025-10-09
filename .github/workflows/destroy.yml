@@ -1,10 +1,8 @@
 name: Terraform Destroy Infra
 
+# Manual trigger only
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
 
 jobs:
   terraform-destroy:
