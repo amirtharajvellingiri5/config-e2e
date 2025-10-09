@@ -43,6 +43,11 @@ jobs:
           terraform import module.security.aws_iam_role.spring_boot_role spring-boot-role-dev
           terraform import module.security.aws_iam_role.kafka_role kafka-dev-role
 
+      - name: Terraform Import IAM Instance Profiles
+        run: |
+          terraform import module.security.aws_iam_instance_profile.spring_boot_profile spring-boot-profile-dev
+          terraform import module.security.aws_iam_instance_profile.kafka_profile kafka-dev-profile
+
       - name: Terraform Plan
         run: terraform plan -var-file=dev.auto.tfvars
 
