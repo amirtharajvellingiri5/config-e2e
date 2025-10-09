@@ -4,15 +4,29 @@ variable "environment" {
 }
 
 variable "vpc_id" {
-  description = "Optional VPC ID to use; if empty the module will attempt to use the default VPC"
+  description = "Optional VPC ID to use; if empty, creates a temporary VPC"
   type        = string
   default     = ""
 }
 
-variable "subnet_id" {
-  description = "Optional specific subnet ID to use; if empty, uses first available subnet in VPC"
+variable "vpc_cidr" {
+  description = "CIDR block for created VPC"
   type        = string
-  default     = ""
+  default     = "10.0.0.0/16"
+}
+
+variable "auto_cleanup" {
+  description = "Whether to allow destroying the created VPC"
+  type        = bool
+  default     = true
+}
+
+# Check if default VPC exists
+data "aws_vpcs" "default_check" {
+  filter {
+    name   = "is-default"
+    values = ["true"]
+  }
 }
 
 # Lookup by provided VPC ID when given
@@ -21,57 +35,120 @@ data "aws_vpc" "by_id" {
   id    = var.vpc_id
 }
 
-# Fallback to default VPC only when no vpc_id is provided
-data "aws_vpc" "default" {
-  count   = var.vpc_id == "" ? 1 : 0
-  default = true
+# Get availability zones
+data "aws_availability_zones" "available" {
+  state = "available"
 }
 
 locals {
-  vpc_id = var.vpc_id != "" ? data.aws_vpc.by_id[0].id : data.aws_vpc.default[0].id
+  use_existing_vpc = var.vpc_id != ""
+  has_default_vpc  = length(data.aws_vpcs.default_check.ids) > 0
+  create_vpc       = !local.use_existing_vpc && !local.has_default_vpc
 }
 
-# Get all subnets in the VPC
-data "aws_subnets" "available" {
-  filter {
-    name   = "vpc-id"
-    values = [local.vpc_id]
+# Create VPC if needed
+resource "aws_vpc" "temp" {
+  count                = local.create_vpc ? 1 : 0
+  cidr_block           = var.vpc_cidr
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name        = "${var.environment}-temp-vpc"
+    Environment = var.environment
+    Temporary   = "true"
+    ManagedBy   = "terraform"
+  }
+
+  lifecycle {
+    prevent_destroy = false
   }
 }
 
-# Lookup specific subnet if provided
-data "aws_subnet" "by_id" {
-  count = var.subnet_id != "" ? 1 : 0
-  id    = var.subnet_id
+# Create Internet Gateway
+resource "aws_internet_gateway" "temp" {
+  count  = local.create_vpc ? 1 : 0
+  vpc_id = aws_vpc.temp[0].id
+
+  tags = {
+    Name        = "${var.environment}-temp-igw"
+    Environment = var.environment
+    Temporary   = "true"
+  }
 }
 
-# Use first available subnet as fallback
-data "aws_subnet" "selected" {
-  count = var.subnet_id == "" ? 1 : 0
-  id    = data.aws_subnets.available.ids[0]
+# Create public subnet
+resource "aws_subnet" "temp" {
+  count                   = local.create_vpc ? 1 : 0
+  vpc_id                  = aws_vpc.temp[0].id
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8, 1)
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name        = "${var.environment}-temp-subnet"
+    Environment = var.environment
+    Temporary   = "true"
+  }
 }
 
-locals {
-  subnet_id = var.subnet_id != "" ? data.aws_subnet.by_id[0].id : data.aws_subnet.selected[0].id
+# Create route table
+resource "aws_route_table" "temp" {
+  count  = local.create_vpc ? 1 : 0
+  vpc_id = aws_vpc.temp[0].id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.temp[0].id
+  }
+
+  tags = {
+    Name        = "${var.environment}-temp-rt"
+    Environment = var.environment
+    Temporary   = "true"
+  }
+}
+
+# Associate route table
+resource "aws_route_table_association" "temp" {
+  count          = local.create_vpc ? 1 : 0
+  subnet_id      = aws_subnet.temp[0].id
+  route_table_id = aws_route_table.temp[0].id
+}
+
+# Get subnets from existing VPC
+data "aws_subnets" "existing" {
+  count = !local.create_vpc ? 1 : 0
+
+  filter {
+    name   = "vpc-id"
+    values = local.use_existing_vpc ? [data.aws_vpc.by_id[0].id] : data.aws_vpcs.default_check.ids
+  }
+}
+
+# Select subnet from existing VPC
+data "aws_subnet" "existing" {
+  count = !local.create_vpc ? 1 : 0
+  id    = data.aws_subnets.existing[0].ids[0]
 }
 
 # Outputs
 output "vpc_id" {
   description = "VPC ID"
-  value       = local.vpc_id
+  value       = local.create_vpc ? aws_vpc.temp[0].id : (local.use_existing_vpc ? data.aws_vpc.by_id[0].id : data.aws_vpcs.default_check.ids[0])
 }
 
 output "public_subnet_id" {
-  description = "Selected subnet ID"
-  value       = local.subnet_id
+  description = "Public subnet ID"
+  value       = local.create_vpc ? aws_subnet.temp[0].id : data.aws_subnet.existing[0].id
+}
+
+output "vpc_created" {
+  description = "Whether a temporary VPC was created"
+  value       = local.create_vpc
 }
 
 output "vpc_cidr" {
   description = "VPC CIDR block"
-  value       = var.vpc_id != "" ? data.aws_vpc.by_id[0].cidr_block : data.aws_vpc.default[0].cidr_block
-}
-
-output "available_subnet_ids" {
-  description = "All available subnet IDs in the VPC"
-  value       = data.aws_subnets.available.ids
+  value       = local.create_vpc ? aws_vpc.temp[0].cidr_block : null
 }
