@@ -40,8 +40,8 @@ jobs:
 
       - name: Terraform Import IAM Roles
         run: |
-          terraform import module.security.aws_iam_role.spring_boot_role spring-boot-role-dev || true
-          terraform import module.security.aws_iam_role.kafka_role kafka-dev-role || true
+          terraform import module.security.aws_iam_role.spring_boot_role spring-boot-role-dev
+          terraform import module.security.aws_iam_role.kafka_role kafka-dev-role
 
       - name: Terraform Plan
         run: terraform plan -var-file=dev.auto.tfvars
