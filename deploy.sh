@@ -38,8 +38,8 @@ terraform apply -auto-approve \
   -var="dockerhub_password=${DOCKERHUB_TOKEN}" \
   -var="key_name=${KEY_NAME}" \
   -var="environment=${ENVIRONMENT}" \
-  -var="dockerhub_user=${DOCKERHUB_USER}"
-
+  -var="dockerhub_user=${DOCKERHUB_USER}" \
+  -var="app_image_uri=vishnukanthmca/spring-boot-app:latest"  # Add this
 # -----------------------------
 # Show Outputs
 # -----------------------------
