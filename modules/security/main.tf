@@ -92,3 +92,13 @@ output "kafka_instance_profile_name" {
   description = "Kafka IAM instance profile name"
   value       = aws_iam_instance_profile.kafka_profile.name
 }
+
+output "spring_boot_security_group_id" {
+  description = "Security group ID for Spring Boot instances"
+  value       = aws_security_group.kafka_sg.id
+}
+
+output "spring_boot_instance_profile_name" {
+  description = "IAM instance profile name for Spring Boot instances"
+  value       = aws_iam_instance_profile.kafka_profile.name
+}
