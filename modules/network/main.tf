@@ -4,17 +4,8 @@ variable "environment" {
 }
 
 # Get default VPC (robust lookup)
-data "aws_vpcs" "default" {
-  filter {
-    name   = "isDefault"
-    values = ["true"]
-  }
-}
-
 data "aws_vpc" "default" {
-  id      = data.aws_vpcs.default.ids[0]
   default = true
-
 }
 
 data "aws_subnets" "default" {
