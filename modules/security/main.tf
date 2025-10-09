@@ -54,6 +54,17 @@ resource "aws_security_group" "kafka_sg" {
   }
 }
 
+resource "aws_iam_role" "spring_boot_role" {
+  name               = "spring-boot-role-${var.environment}"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+resource "aws_iam_instance_profile" "spring_boot_profile" {
+  name = "spring-boot-profile-${var.environment}"
+  role = aws_iam_role.spring_boot_role.name
+}
+
+
 resource "aws_iam_role" "kafka_role" {
   name = "kafka-dev-role"
 
@@ -93,6 +104,38 @@ resource "aws_iam_instance_profile" "spring_boot_profile" {
   role = aws_iam_role.spring_boot_role.name
 }
 
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+
+resource "aws_security_group" "spring_boot_sg" {
+  name        = "spring-boot-sg-${var.environment}"
+  description = "Security group for Spring Boot"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 # Outputs
 output "kafka_security_group_id" {
   description = "Kafka security group ID"
@@ -123,3 +166,4 @@ output "springboot_instance_profile_name" {
   description = "Spring Boot IAM instance profile name"
   value       = aws_iam_instance_profile.spring_boot_profile.name
 }
+
