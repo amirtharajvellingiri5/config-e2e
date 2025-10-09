@@ -12,10 +12,9 @@ data "aws_vpcs" "default" {
 }
 
 data "aws_vpc" "default" {
-  id = data.aws_vpcs.default.ids[0]
-}
-data "aws_vpc" "default" {
+  id      = data.aws_vpcs.default.ids[0]
   default = true
+
 }
 
 data "aws_subnets" "default" {
