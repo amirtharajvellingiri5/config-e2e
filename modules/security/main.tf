@@ -93,10 +93,4 @@ output "kafka_instance_profile_name" {
   value       = aws_iam_instance_profile.kafka_profile.name
 }
 
-output "springboot_sg_id" {
-  value = aws_security_group.springboot.id
-}
 
-output "springboot_instance_profile_name" {
-  value = aws_iam_instance_profile.springboot.name
-}
