@@ -45,3 +45,4 @@ terraform apply -auto-approve \
 # -----------------------------
 echo "Fetching outputs..."
 terraform output
+

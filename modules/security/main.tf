@@ -92,5 +92,3 @@ output "kafka_instance_profile_name" {
   description = "Kafka IAM instance profile name"
   value       = aws_iam_instance_profile.kafka_profile.name
 }
-
-
