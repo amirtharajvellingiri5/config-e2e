@@ -35,6 +35,17 @@ variable "app_image_uri" {
   default     = "vishnukanthmca/springboot-app:latest"
 }
 
+variable "dockerhub_user" {
+  description = "DockerHub username"
+  type        = string
+}
+
+variable "dockerhub_password" {
+  description = "DockerHub password or token"
+  type        = string
+  sensitive   = true
+}
+
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -55,7 +66,7 @@ resource "aws_eip" "springboot_eip" {
 }
 
 resource "aws_instance" "springboot" {
-  ami                    = data.aws_ami.amazon_linux.id
+  ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [var.security_group_id]
@@ -63,12 +74,14 @@ resource "aws_instance" "springboot" {
   key_name               = var.key_name
 
   user_data = templatefile("${path.module}/user_data.sh", {
-    app_image_uri = var.app_image_uri
-    environment   = var.environment
+    app_image_uri      = var.app_image_uri
+    environment        = var.environment
+    dockerhub_user     = var.dockerhub_user
+    dockerhub_password = var.dockerhub_password
   })
 
   tags = {
-    Name        = "springboot-${var.environment}-server"
+    Name        = "${var.environment}-springboot"
     Environment = var.environment
   }
 
