@@ -82,6 +82,17 @@ resource "aws_iam_instance_profile" "kafka_profile" {
   role = aws_iam_role.kafka_role.name
 }
 
+# modules/security/main.tf
+resource "aws_iam_role" "spring_boot_role" {
+  name               = "spring-boot-role-${var.environment}"
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+resource "aws_iam_instance_profile" "spring_boot_profile" {
+  name = "spring-boot-profile-${var.environment}"
+  role = aws_iam_role.spring_boot_role.name
+}
+
 # Outputs
 output "kafka_security_group_id" {
   description = "Kafka security group ID"
