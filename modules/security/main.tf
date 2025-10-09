@@ -93,16 +93,6 @@ resource "aws_iam_instance_profile" "kafka_profile" {
   role = aws_iam_role.kafka_role.name
 }
 
-# modules/security/main.tf
-resource "aws_iam_role" "spring_boot_role" {
-  name               = "spring-boot-role-${var.environment}"
-  assume_role_policy = data.aws_iam_policy_document.assume_role.json
-}
-
-resource "aws_iam_instance_profile" "spring_boot_profile" {
-  name = "spring-boot-profile-${var.environment}"
-  role = aws_iam_role.spring_boot_role.name
-}
 
 data "aws_iam_policy_document" "assume_role" {
   statement {
@@ -147,23 +137,13 @@ output "kafka_instance_profile_name" {
   value       = aws_iam_instance_profile.kafka_profile.name
 }
 
-output "spring_boot_security_group_id" {
-  description = "Security group ID for Spring Boot instances"
-  value       = aws_security_group.kafka_sg.id
-}
-
-output "spring_boot_instance_profile_name" {
-  description = "IAM instance profile name for Spring Boot instances"
-  value       = aws_iam_instance_profile.kafka_profile.name
-}
-
-output "springboot_sg_id" {
-  description = "Spring Boot Security Group ID"
-  value       = aws_security_group.spring_boot_sg.id
-}
 
 output "springboot_instance_profile_name" {
   description = "Spring Boot IAM instance profile name"
   value       = aws_iam_instance_profile.spring_boot_profile.name
 }
 
+output "springboot_sg_id" {
+  description = "Spring Boot Security Group ID"
+  value       = aws_security_group.spring_boot_sg.id
+}
